@@ -10,7 +10,7 @@ VS Code terminal) opened INSIDE the project folder (the "EV" folder).
 QUICK START (laptop where the project is already set up and trained)
 ---------------------------------------------------------------------
 
-  1. cd C:\Users\HP\OneDrive\Desktop\EV
+  1. cd <path to the EV folder>     (e.g. cd C:\Users\HP\OneDrive\Desktop\EV)
   2. venv\Scripts\activate
   3. streamlit run app.py
 
@@ -28,13 +28,21 @@ FULL SETUP (new computer, or a fresh copy of the project)
 STEP 0 - Requirements
   - Windows laptop with Python 3.9, 3.10 or 3.11
     (check with:  python --version)
+  - Git (check with:  git --version), or download the project as a ZIP
+    from GitHub instead (green "Code" button -> "Download ZIP")
   - At least 8 GB RAM and about 3 GB free disk space
     (plus space for the dataset)
   - Internet connection for installing packages. After that everything
     works offline, except the satellite background of the Demand Map.
 
-STEP 1 - Open a terminal in the project folder
-  cd C:\Users\HP\OneDrive\Desktop\EV
+STEP 1 - Download the project and open a terminal in its folder
+  Open a terminal in the folder where you want the project, then:
+
+    git clone https://github.com/vidushi0409/EV.git
+    cd EV
+
+  (If you downloaded the ZIP instead: extract it and open a terminal
+  inside the extracted "EV" folder.)
 
 STEP 2 - Create the virtual environment (only once)
   python -m venv venv

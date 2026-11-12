@@ -82,9 +82,12 @@ Charging Demand Prediction.* Scientific Data, 12, 523. https://doi.org/10.1038/s
 
 ## Installation (Windows)
 
-Requires Python 3.9–3.11. Run these commands in the project folder:
+Requires Python 3.9–3.11 and Git. Step-by-step instructions are also in
+[HOW_TO_RUN.txt](HOW_TO_RUN.txt).
 
 ```bat
+git clone https://github.com/vidushi0409/EV.git
+cd EV
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
