@@ -51,6 +51,13 @@ REFERENCE = "Reference (zone typical demand)"
 TEST_START = pd.Timestamp("2023-02-01")
 
 
+def profile_models_ready():
+    """True only if EVERY file the estimator needs exists (model files are not in Git)."""
+    needed = list(PROFILE_FILES.values()) + [PROFILE_STATS, PROFILE_PRICES, PROFILE_INFO,
+                                             PROFILE_EVAL, PROFILE_ZONE_MAE]
+    return all(p.exists() for p in needed)
+
+
 # ---------------------------------------------------------------- feature building
 def zone_profiles(history):
     """Zone x hour and zone x weekday average demand from the given history."""
@@ -155,7 +162,7 @@ class ProfileEstimator:
     """Loads the final profile models and produces estimates for any date."""
 
     def __init__(self):
-        if not PROFILE_INFO.exists():
+        if not profile_models_ready():
             raise FileNotFoundError("Future-date models not found. Run: python train.py")
         self.info = json.loads(PROFILE_INFO.read_text())
         self.models = {}

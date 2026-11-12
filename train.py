@@ -17,7 +17,7 @@ from src.data_loader import check_5min_consistency, check_dataset, load_panel
 from src.eda import run_correlation_analysis
 from src.evaluate_models import run_evaluation
 from src.feature_engineering import load_features
-from src.profile_model import PROFILE_INFO, train_profile_models
+from src.profile_model import profile_models_ready, train_profile_models
 from src.train_models import MODEL_NAMES, train_all
 from src.walk_forward import WF_PREDICTIONS, run_walk_forward
 
@@ -49,7 +49,7 @@ def main():
     else:
         run_walk_forward(feats)
     print("[6/6] Future-date models ...")
-    if PROFILE_INFO.exists() and not args.force:
+    if profile_models_ready() and not args.force:
         print("      [skip] already trained (use --force to retrain)")
     else:
         print(train_profile_models().round(3).to_string(index=False))

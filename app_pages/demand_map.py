@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 from src.predict import LEVELS
@@ -36,11 +37,31 @@ fig = px.scatter_mapbox(
     hover_name="Zone", hover_data=hover,
     labels={"predicted_kwh": "Predicted (kWh)", "actual_kwh": "Actual (kWh)",
             "utilisation_pct": "Utilisation (%)", "level": "Level"},
-    zoom=9.3, height=540, mapbox_style="carto-positron")
-fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), legend=dict(orientation="h", y=1.02, x=0, title=None))
+    zoom=9.3, height=540)
+# Label-free satellite basemap (free, no API key) + our own English district names
+fig.update_layout(
+    mapbox_style="white-bg",
+    mapbox_layers=[{"below": "traces", "sourcetype": "raster", "sourceattribution": "Imagery © Esri",
+                    "source": ["https://server.arcgisonline.com/ArcGIS/rest/services/"
+                               "World_Imagery/MapServer/tile/{z}/{y}/{x}"]}],
+    margin=dict(l=0, r=0, t=0, b=0), legend=dict(orientation="h", y=1.02, x=0, title=None))
+DISTRICTS = {"Futian": (114.055, 22.541), "Luohu": (114.131, 22.548), "Nanshan": (113.930, 22.533),
+             "Bao'an": (113.883, 22.555), "Longhua": (114.045, 22.696), "Longgang": (114.247, 22.720),
+             "Guangming": (113.936, 22.748), "Pingshan": (114.346, 22.708), "Yantian": (114.236, 22.557),
+             "Dapeng": (114.479, 22.588)}
+fig.add_trace(go.Scattermapbox(lon=[v[0] for v in DISTRICTS.values()], lat=[v[1] for v in DISTRICTS.values()],
+                               text=list(DISTRICTS), mode="text", hoverinfo="skip", showlegend=False,
+                               textfont=dict(size=14, color="#ffffff")))
+fig.update_traces(marker=dict(opacity=0.9), selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Busiest zones")
-top = city.sort_values("predicted_kwh", ascending=False).head(10)
-st.dataframe(display_table(top), hide_index=True, use_container_width=True)
+top = display_table(city.sort_values("predicted_kwh", ascending=False).head(10))
+keep = [c for c in ("Zone", "Predicted (kWh)", "Actual (kWh)", "Demand level", "Utilisation (%)",
+                    "Price (RMB/kWh)") if c in top.columns]
+st.dataframe(top[keep], hide_index=True, use_container_width=True,
+             column_config={"Predicted (kWh)": st.column_config.NumberColumn(format="%.1f"),
+                            "Actual (kWh)": st.column_config.NumberColumn(format="%.1f"),
+                            "Utilisation (%)": st.column_config.NumberColumn(format="%.0f"),
+                            "Price (RMB/kWh)": st.column_config.NumberColumn(format="%.2f")})
 csv_download(display_table(city.sort_values("zone")), f"city_forecast_{ts:%Y%m%d_%H00}.csv")

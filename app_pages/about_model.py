@@ -29,6 +29,18 @@ FRIENDLY = {
 FMT = {"MAE": "{:,.1f}", "MSE": "{:,.0f}", "RMSE": "{:,.1f}", "R²": "{:.3f}"}
 
 
+@st.cache_data(show_spinner=False)
+def predictions_csv(modified):
+    """Test-period predictions as CSV bytes, built once (cache refreshes when the file changes)."""
+    preds = pd.read_parquet(PREDICTIONS_FILE, columns=["time", "zone", "actual"] + MODEL_NAMES)
+    return preds.to_csv(index=False).encode("utf-8")
+
+
+@st.cache_data(show_spinner=False)
+def file_bytes(path, modified):
+    return path.read_bytes()
+
+
 def metric_table(df):
     t = df[["model", "MAE", "MSE", "RMSE", "R2"]].rename(columns={"model": "Model", "R2": "R²"})
     return (t.style.format(FMT).highlight_min(subset=["MAE", "MSE", "RMSE"], color="#d6f0e4")
@@ -111,13 +123,13 @@ with d1:
     csv_download(svc.monthly, "monthly_accuracy.csv", "⬇ Monthly accuracy")
 with d2:
     if PREDICTIONS_FILE.exists():
-        preds = pd.read_parquet(PREDICTIONS_FILE, columns=["time", "zone", "actual"] + MODEL_NAMES)
-        csv_download(preds, "test_predictions.csv", "⬇ Test predictions")
+        st.download_button("⬇ Test predictions", predictions_csv(PREDICTIONS_FILE.stat().st_mtime),
+                           file_name="test_predictions.csv", mime="text/csv")
 with d3:
     for fname, mime in [("Project_Report.pdf", "application/pdf"),
                         ("Project_Report.docx",
                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]:
         path = config.REPORTS_DIR / fname
         if path.exists():
-            st.download_button(f"⬇ Report ({path.suffix[1:].upper()})", path.read_bytes(),
-                               file_name=fname, mime=mime)
+            st.download_button(f"⬇ Report ({path.suffix[1:].upper()})",
+                               file_bytes(path, path.stat().st_mtime), file_name=fname, mime=mime)

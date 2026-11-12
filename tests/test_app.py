@@ -5,10 +5,10 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 import src.ui as ui
-from src.profile_model import PROFILE_INFO
+from src.profile_model import profile_models_ready
 from src.walk_forward import WF_PREDICTIONS
 
-pytestmark = pytest.mark.skipif(not (WF_PREDICTIONS.exists() and PROFILE_INFO.exists()),
+pytestmark = pytest.mark.skipif(not (WF_PREDICTIONS.exists() and profile_models_ready()),
                                 reason="models not trained")
 
 PAGES = ["home", "demand_forecast", "prediction_vs_actual", "demand_map", "zone_insights",
@@ -38,7 +38,7 @@ def test_page_runs_without_errors(page):
 def test_page_runs_for_future_date(page):
     at = run_page(page, dt.date(2025, 8, 15))
     no_problems(at)
-    assert any("Typical-pattern estimate" in m.value for m in at.markdown)
+    assert any("Future date · estimate" in m.value for m in at.markdown)
 
 
 def test_app_entry_point_runs():

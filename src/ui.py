@@ -112,7 +112,7 @@ MODE_TIPS = {
 
 def mode_banner(mode):
     text = ("📊 Dataset period · compared with actual" if mode == "dataset"
-            else "🔭 Typical-pattern estimate · not year-specific")
+            else "🔭 Future date · estimate")
     st.markdown(f'<span class="pill pill-{mode}">{text}</span>', unsafe_allow_html=True,
                 help=MODE_TIPS[mode])
 
