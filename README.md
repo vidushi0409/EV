@@ -2,10 +2,17 @@
 
 **Spatiotemporal Prediction of Electric Vehicle Charging Demand** — Data Science Lab project.
 
-The system predicts the energy (kWh) that electric-vehicle chargers will deliver in each of
-Shenzhen's 275 charging zones during the **next hour**. Three regression models
-(**Linear Regression, Random Forest, LightGBM**) are trained on the UrbanEV dataset and compared
-on a chronological test period. The best model powers a local **Streamlit** web application.
+The system predicts the energy (kWh) that electric-vehicle chargers deliver in each of
+Shenzhen's 275 charging zones per hour. Three regression models
+(**Linear Regression, Random Forest, LightGBM**) are trained on the UrbanEV dataset and compared.
+In the local **Streamlit** web application users pick **any date from 1 Oct 2022 up to today**:
+
+| Dates | What the app shows |
+|---|---|
+| 1 Oct 2022 – 28 Feb 2023 (dataset period) | Next-hour predictions of all three models **next to the actual demand**, with error and an accuracy label. Each month was predicted by models trained only on earlier months (walk-forward). |
+| 1 Mar 2023 – today | **Estimates** from future-date (profile) models trained on all six months, with a typical error range. No actual data exists for these dates. |
+
+September 2022 is training-only data (no earlier month to learn from).
 
 ## Features
 
@@ -14,8 +21,9 @@ on a chronological test period. The best model powers a local **Streamlit** web 
   capacity per zone.
 - Correlation analysis (the only EDA), model training, evaluation (MAE, MSE, RMSE, R²),
   feature importance and residual analysis.
-- A web app for end users: demand forecast, city demand map, zone insights, zone comparison,
-  and an "About the Model" page.
+- Walk-forward forecasting (Oct 2022 – Feb 2023) and future-date models for any later date.
+- A web app for end users: demand forecast, prediction vs actual over a date range, city demand
+  map, zone insights, zone comparison, and an "About the Model" page with month-by-month accuracy.
 - A Jupyter notebook, a project report and a viva preparation document (PDF + Word), all built
   from the saved results.
 
@@ -24,7 +32,7 @@ on a chronological test period. The best model powers a local **Streamlit** web 
 ```
 EV/
 ├── app.py                     # Streamlit entry point  ->  streamlit run app.py
-├── app_pages/                 # the 6 app pages (Home, Forecast, Map, Insights, Compare, About)
+├── app_pages/                 # the 7 app pages (Home, Forecast, Prediction vs Actual, Map, Insights, Compare, About)
 ├── train.py                   # runs the full ML pipeline once (data -> features -> models -> results)
 ├── build_reports.py           # regenerates the report + viva documents from saved results
 ├── requirements.txt
@@ -36,7 +44,9 @@ EV/
 │   ├── eda.py                 # Pearson correlation analysis + heatmap
 │   ├── train_models.py        # Linear Regression, Random Forest, LightGBM
 │   ├── evaluate_models.py     # metrics, comparison, best-model selection, charts
-│   ├── predict.py             # prediction service used by the app
+│   ├── walk_forward.py        # month-by-month forecasts for the dataset period
+│   ├── profile_model.py       # future-date models (any date after Feb 2023)
+│   ├── predict.py             # prediction service used by the app (both modes)
 │   ├── plot_style.py, ui.py   # shared chart colours / app helpers
 ├── notebooks/UrbanEV_Analysis.ipynb
 ├── tests/                     # pytest data, leakage and model tests
@@ -82,13 +92,14 @@ pip install -r requirements.txt
 
 ## Running the project
 
-1. **Train the models (once, about 2–3 minutes):**
+1. **Train the models (once, about 20 minutes on a laptop):**
    ```bat
    python train.py
    ```
-   This builds the cached tables, runs the correlation analysis, trains the three models,
-   evaluates them and selects the best one. Saved models are reused on later runs; use
-   `python train.py --force` to retrain.
+   This builds the cached tables, runs the correlation analysis, trains and compares the three
+   models, computes the walk-forward forecasts (the slowest step, about 15 minutes) and trains the
+   future-date models. Saved results are reused on later runs (then it takes about 1 minute);
+   use `python train.py --force` to retrain everything.
 
 2. **Start the web application:**
    ```bat
@@ -121,6 +132,8 @@ pip install -r requirements.txt
 | Split | train 8 Sep–31 Dec 2022 · validation Jan 2023 · test Feb 2023 (chronological) |
 | Models | Linear Regression (scaled), Random Forest, LightGBM, plus two naive reference forecasts |
 | Selection | lowest validation RMSE, confirmed on the test set |
+| Dataset-period app forecasts | walk-forward: each month Oct–Feb predicted by models trained only on earlier months |
+| Future-date estimates | profile models (calendar, holidays, typical prices, zone typical demand) trained on all six months; holiday dates after Feb 2023 are listed in `src/config.py` and should be verified |
 | Excluded inputs | `volume_11kw` (part of the target), same-hour occupancy and duration (unknown in advance), `month` (test month unseen in training) |
 
 Results (metrics, best model, charts) are in `artifacts/evaluation/`, on the app's

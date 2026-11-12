@@ -14,8 +14,9 @@ data/Dataset/
 data/processed/
 
 # Large trained model files (regenerate with: python train.py)
-models/*.joblib
+models/**/*.joblib
 models/*.txt
+artifacts/walk_forward/predictions.parquet
 
 # Editor / logs
 .vscode/

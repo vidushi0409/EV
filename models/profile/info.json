@@ -1,0 +1,27 @@
+{
+  "best_model": "Linear Regression",
+  "trained_on": "2022-09-01 to 2023-02-28",
+  "evaluated_on": "2023-02 (trained on data before February)",
+  "features": [
+    "hour",
+    "dayofweek",
+    "is_weekend",
+    "is_holiday",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "e_price",
+    "s_price",
+    "num_piles",
+    "fast_share",
+    "avg_pile_kw",
+    "capacity_kw",
+    "area",
+    "longitude",
+    "latitude",
+    "zone_hour_mean",
+    "zone_dow_mean",
+    "zone_wk_hour_mean"
+  ]
+}

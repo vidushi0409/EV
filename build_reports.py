@@ -321,6 +321,11 @@ def load_results():
                                              end=("time", "max")).loc[["train", "val", "test"]],
         "n_rows": len(feats),
     }
+    from src.profile_model import PROFILE_EVAL, PROFILE_INFO
+    from src.walk_forward import WF_MONTHLY
+    R["wf"] = pd.read_csv(WF_MONTHLY)
+    R["profile_eval"] = pd.read_csv(PROFILE_EVAL)
+    R["future_best"] = json.loads(PROFILE_INFO.read_text())["best_model"]
     panel = pd.read_parquet(config.PROCESSED_DIR / "panel_hourly.parquet", columns=["time", "volume"])
     by_hour = panel.groupby(panel.time.dt.hour).volume.sum()
     R["peak_hours"] = by_hour.sort_values(ascending=False).index[:3].tolist()
@@ -529,10 +534,24 @@ def build_report(R):
     doc.table(lg, widths=(50, 40, 42, 42))
     if "best_iteration" in R["log"].get("LightGBM", {}):
         doc.p(f"LightGBM stopped early at {R['log']['LightGBM']['best_iteration']} trees.")
-    doc.h2("9.1 Software architecture")
+    doc.h2("9.1 Two prediction modes")
+    doc.p("Users can pick any date from 1 October 2022 up to today. Two kinds of models make this possible, "
+          "each built with all three algorithms:")
+    doc.table(pd.DataFrame([
+        ["Dates", "1 Oct 2022 - 28 Feb 2023", "1 Mar 2023 - today"],
+        ["Models", "Next-hour models (25 features incl. recent demand)",
+         "Profile models (calendar, holidays, typical prices, zone attributes, zone typical demand)"],
+        ["Training", "Walk-forward: each month predicted by models trained only on earlier months",
+         "All six months (evaluated first on February 2023)"],
+        ["Output", "Prediction AND actual demand, error and accuracy label",
+         "Estimate with a typical error range (no actual data exists)"],
+    ], columns=["", "Mode 1: dataset period", "Mode 2: future dates"]), widths=(24, 70, 80))
+    doc.p("September 2022 is not offered: it is the first month, so no earlier data exists to train on. "
+          "Future-date holiday flags use the official public-holiday schedules up to 2026.")
+    doc.h2("9.2 Software architecture")
     doc.bullets([
-        "**Backend (src/):** data loading, preprocessing, feature engineering, correlation analysis, training, evaluation and a prediction service. python train.py runs the whole pipeline once.",
-        "**Frontend (Streamlit app):** Home, Demand Forecast, Demand Map, Zone Insights, Compare Zones and About the Model pages. The app only loads the saved best model and calls the prediction service; no training happens in the interface.",
+        "**Backend (src/):** data loading, preprocessing, feature engineering, correlation analysis, training, evaluation, walk-forward forecasting, future-date models and a prediction service. python train.py runs the whole pipeline once.",
+        "**Frontend (Streamlit app):** Home, Demand Forecast, Prediction vs Actual, Demand Map, Zone Insights, Compare Zones and About the Model pages. The app only loads saved models and results; no training happens in the interface.",
         "**Notebook:** the full analysis, using the same src modules so results are identical.",
         "**Persistence:** models saved with joblib; data cached as Parquet; results saved as CSV/JSON/PNG.",
     ])
@@ -593,6 +612,37 @@ def build_report(R):
           "linear equation cannot, and with early stopping it avoids overfitting. Random Forest averages "
           "independent trees and is limited in depth for memory reasons, which leaves slightly more error.")
 
+    wf = R["wf"]
+    doc.h2("11.5 Walk-forward results (month by month)")
+    doc.p("Each month was predicted by models trained only on the months before it. These are the "
+          "predictions shown in the application for the dataset period.")
+    wt = wf.pivot(index="month", columns="model", values="RMSE")[ML]
+    wt = wt.reindex(config.WALK_FORWARD_MONTHS + ["Oct-Feb (all)"]).reset_index()
+    wt.columns = ["Predicted month"] + [f"{m} RMSE" for m in ML]
+    doc.table(wt, widths=(44, 43, 43, 44))
+    allwf = wf[wf.month == "Oct-Feb (all)"].set_index("model")
+    wins = sum(wf[wf.month != "Oct-Feb (all)"].groupby("month")
+               .apply(lambda d: d.sort_values("RMSE").model.iloc[0] == b))
+    doc.p(f"{b} had the lowest error in {wins} of {len(config.WALK_FORWARD_MONTHS)} months; over the whole "
+          f"period its RMSE was {allwf.at[b, 'RMSE']:.1f} kWh (R² {allwf.at[b, 'R2']:.3f}). Errors fall as more "
+          "training months become available, so the model ranking is stable over time.")
+
+    pe = R["profile_eval"].set_index("model")
+    fb = R["future_best"]
+    ref = "Reference (zone typical demand)"
+    doc.h2("11.6 Future-date models")
+    pt = R["profile_eval"][["model", "MAE", "MSE", "RMSE", "R2"]].copy()
+    pt.columns = ["Model", "MAE (kWh)", "MSE", "RMSE (kWh)", "R²"]
+    pt["R²"] = pt["R²"].map(lambda v: f"{v:.4f}")
+    doc.table(pt, widths=(58, 28, 34, 28, 26))
+    doc.p(f"Tested on February 2023 after training on earlier months. The best future-date model is **{fb}** "
+          f"(RMSE {pe.at[fb, 'RMSE']:.1f} kWh), only {100 * (1 - pe.at[fb, 'RMSE'] / pe.at[ref, 'RMSE']):.1f}% better "
+          f"than simply using the zone's typical demand ({pe.at[ref, 'RMSE']:.1f} kWh), and far less precise "
+          f"than next-hour forecasting ({wf[(wf.month == '2023-02') & (wf.model == b)].RMSE.iloc[0]:.1f} kWh on "
+          "the same month). Without recent real demand, the best available estimate is close to the zone's "
+          "usual pattern; the tree models fitted Sep-Jan specifics that did not carry over to February. "
+          "Future estimates are therefore labelled as estimates in the application.")
+
     # 12
     doc.h1("12. Conclusion")
     top3 = ", ".join(imp_b.feature.head(3)) if imp_b is not None else "recent demand lags"
@@ -605,7 +655,9 @@ def build_report(R):
         f"Demand is concentrated overnight: {R['night_share'] * 100:.0f}% of all energy is delivered between 00:00 and 07:59, "
         "when electricity prices are lowest.",
         "Zones with more fast chargers and higher installed power deliver more energy.",
-        "The selected model is deployed in a working local web application for end users.",
+        "Walk-forward forecasting confirmed the ranking in every month from October to February.",
+        "Without recent demand, future-date estimates are close to typical-demand averages: recent history is what makes accurate forecasting possible.",
+        "Everything is deployed in a local web application where users pick any date: dataset-period dates are compared with actual demand, later dates receive clearly-labelled estimates.",
     ])
     doc.p("**Practical applications:** operators can plan capacity, maintenance and dynamic pricing; drivers can "
           "avoid busy hours; planners can identify zones where chargers are under pressure; grid operators can "
@@ -618,6 +670,7 @@ def build_report(R):
         "Results are specific to Shenzhen and its large electric taxi fleet; other cities may behave differently.",
         "No weather or event data; public holidays are represented only by a flag.",
         "Forecasts are one hour ahead and evaluated on historical data; the application is not connected to live data.",
+        "Future-date estimates reflect Sep 2022 - Feb 2023 patterns only (no summer months, no EV growth after February 2023) and cannot be checked against actual demand. Holiday dates after the dataset come from official schedules and should be verified.",
         "Small inconsistencies between source files (e.g. the rated-power list covers fewer stations than the station file) were documented, not corrected.",
         "Random Forest was size-limited to run on a laptop, which may cost some accuracy.",
     ])
@@ -735,9 +788,21 @@ def build_viva(R):
     doc.qa("Why can you use same-hour prices but not same-hour occupancy?", f"Prices follow a published time-of-use tariff ({R['prices']['e_price'] * 100:.0f}% of days repeat the previous day's profile), so they are known in advance. Occupancy is only known after the hour has happened.")
     doc.qa("Why is volume_11kw leakage?", f"It is the energy from slow chargers, which is part of the total volume (≤ volume in {S['volume_11kw_leakage']['share of rows with volume_11kw <= volume'] * 100:.1f}% of rows, {S['volume_11kw_leakage']['share of total energy'] * 100:.0f}% of all energy). Using it means partly giving the model the answer.")
 
-    doc.h1("13. Application and practical use")
-    doc.qa("How does the web application work?", "It is a Streamlit app. The backend loads the saved best model and the real historical data; users pick a zone and time and get the predicted kWh, a demand level, charger utilisation and price. Pages: Home, Demand Forecast, Demand Map, Zone Insights, Compare Zones, About the Model.")
-    doc.qa("Why does the app only forecast February 2023?", "The dataset ends in February 2023 and that month was held out from training, so users can see honest forecasts next to what actually happened. With live data the same pipeline would forecast the next hour in real time.")
+    wf = R["wf"]
+    allwf = wf[wf.month == "Oct-Feb (all)"].set_index("model")
+    pe = R["profile_eval"].set_index("model")
+    fb, ref = R["future_best"], "Reference (zone typical demand)"
+    doc.h1("13. Walk-forward forecasting and future dates")
+    doc.qa("What is walk-forward forecasting?", "Each month is predicted by models trained only on the months before it (train Sep -> predict Oct, train Sep-Oct -> predict Nov, ... train Sep-Jan -> predict Feb). It simulates retraining the model every month as new data arrives.")
+    doc.qa("Why did you use it?", f"So users can pick any date from 1 Oct 2022 to 28 Feb 2023 and compare an honest prediction with the actual demand, and to check that the model ranking is stable over time. Over Oct-Feb {b} reached RMSE {allwf.at[b, 'RMSE']:.1f} kWh (R² {allwf.at[b, 'R2']:.3f}), versus {allwf.at['Random Forest', 'RMSE']:.1f} for Random Forest and {allwf.at['Linear Regression', 'RMSE']:.1f} for Linear Regression.")
+    doc.qa("Why can't September be predicted?", "It is the first month of the data, so there is no earlier data to train on. Predicting it with a model that learnt from it would not be an honest forecast.")
+    doc.qa("How can you predict dates after February 2023?", "Next-hour models need the last hours' real demand, which does not exist after the dataset. For later dates we use profile models: inputs known for any date (hour, weekday, holiday, typical prices, zone attributes and the zone's typical demand), trained on all six months.")
+    doc.qa("How accurate are the future-date estimates?", f"Tested on February: best model {fb}, RMSE {pe.at[fb, 'RMSE']:.1f} kWh, only {100 * (1 - pe.at[fb, 'RMSE'] / pe.at[ref, 'RMSE']):.1f}% better than just using the zone's typical demand ({pe.at[ref, 'RMSE']:.1f}). Next-hour forecasts on the same month are far better ({wf[(wf.month == '2023-02') & (wf.model == b)].RMSE.iloc[0]:.1f}). Recent demand is the key information.")
+    doc.qa("Why is Linear Regression best for future dates when LightGBM is best overall?", "Without recent demand the task becomes 'scale the zone's usual pattern'. The tree models learnt Sep-Jan specifics that did not carry over to February, while the simpler linear model generalised better. The best model depends on the task and the inputs.")
+    doc.qa("What are the limits of future estimates?", "They reflect Sep 2022 - Feb 2023 patterns only: no summer months, no growth in EV numbers or new stations after February 2023, and they cannot be checked against actual data. The app labels them as estimates.")
+
+    doc.h1("14. Application and practical use")
+    doc.qa("How does the web application work?", "It is a Streamlit app. The user picks a zone and any date from 1 Oct 2022 to today. For dataset dates it shows all three models' predictions next to the actual demand with an accuracy label; for later dates it shows estimates with a typical error range. Pages: Home, Demand Forecast, Prediction vs Actual, Demand Map, Zone Insights, Compare Zones, About the Model.")
     doc.qa("What are the practical applications?", "Operators: capacity planning, dynamic pricing, maintenance in quiet hours. Drivers: avoiding queues. Planners: identifying overloaded zones. Grid operators: anticipating EV charging load.")
     doc.qa("What did you find surprising?", f"Demand peaks overnight: {R['night_share'] * 100:.0f}% of energy is delivered between 00:00 and 07:59, when electricity is cheapest, consistent with electric taxis and ride-hailing fleets charging at night.")
     doc.qa("What are the main limitations and improvements?", "Six months of data, one city, no weather data, one-hour horizon. Improvements: weather/event data, multi-step forecasts, graph neural networks using the adjacency matrix, and live data.")

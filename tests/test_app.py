@@ -1,26 +1,44 @@
-"""Streamlit app tests (headless). Run with:  python -m pytest -q"""
+"""Streamlit app and prediction-service tests (headless). Run with:  python -m pytest -q"""
+import datetime as dt
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
 import src.ui as ui
-from src.evaluate_models import read_best_model
+from src.profile_model import PROFILE_INFO
+from src.walk_forward import WF_PREDICTIONS
 
-pytestmark = pytest.mark.skipif(read_best_model() is None, reason="models not trained")
+pytestmark = pytest.mark.skipif(not (WF_PREDICTIONS.exists() and PROFILE_INFO.exists()),
+                                reason="models not trained")
 
-PAGES = ["home", "demand_forecast", "demand_map", "zone_insights", "compare_zones", "about_model"]
+PAGES = ["home", "demand_forecast", "prediction_vs_actual", "demand_map", "zone_insights",
+         "compare_zones", "about_model"]
+DATE_PAGES = ["demand_map", "zone_insights", "compare_zones"]
 
 
-def run_page(name):
+def run_page(name, day=None):
     at = AppTest.from_file(f"app_pages/{name}.py", default_timeout=180)
     at.run()
+    if day is not None:
+        at.date_input[0].set_value(day).run()
     return at
+
+
+def no_problems(at):
+    assert not at.exception, [e.value for e in at.exception]
+    assert not at.error, [e.value for e in at.error]
 
 
 @pytest.mark.parametrize("page", PAGES)
 def test_page_runs_without_errors(page):
-    at = run_page(page)
-    assert not at.exception, [e.value for e in at.exception]
-    assert not at.error, [e.value for e in at.error]
+    no_problems(run_page(page))
+
+
+@pytest.mark.parametrize("page", DATE_PAGES)
+def test_page_runs_for_future_date(page):
+    at = run_page(page, dt.date(2025, 8, 15))
+    no_problems(at)
+    assert any("Future date" in m.value for m in at.markdown)
 
 
 def test_app_entry_point_runs():
@@ -29,18 +47,21 @@ def test_app_entry_point_runs():
     assert not at.exception
 
 
-def test_forecast_button_returns_prediction():
+@pytest.mark.parametrize("day,expect_actual", [(dt.date(2023, 2, 14), True), (dt.date(2025, 8, 15), False)])
+def test_forecast_button(day, expect_actual):
     at = run_page("demand_forecast")
+    at.date_input[0].set_value(day).run()
     at.button[0].click().run()
-    labels = {m.label: m.value for m in at.metric}
-    assert "Predicted demand" in labels and labels["Predicted demand"].endswith("kWh")
-    assert "Actual demand" in labels
+    no_problems(at)
+    labels = [m.label for m in at.metric]
+    assert any(l.startswith(("Predicted demand", "Estimated demand")) for l in labels)
+    assert ("Actual demand" in labels) == expect_actual
 
 
-@pytest.mark.parametrize("page", ["demand_map", "zone_insights", "compare_zones", "about_model"])
+@pytest.mark.parametrize("page", ["prediction_vs_actual", "demand_map", "zone_insights",
+                                  "compare_zones", "about_model"])
 def test_download_buttons_present(page):
-    at = run_page(page)
-    assert len(at.get("download_button")) >= 1
+    assert len(run_page(page).get("download_button")) >= 1
 
 
 def test_missing_dataset_shows_message(monkeypatch):
@@ -52,16 +73,33 @@ def test_missing_dataset_shows_message(monkeypatch):
 
 def test_untrained_model_shows_message(monkeypatch):
     def fail():
-        raise FileNotFoundError("LightGBM has not been trained yet. Run: python train.py")
-    monkeypatch.setattr(ui, "_load_forecaster", fail)
+        raise FileNotFoundError("Models not trained yet. Run: python train.py")
+    monkeypatch.setattr(ui, "_load_service", fail)
     at = run_page("zone_insights")
     assert not at.exception
     assert any("not ready" in e.value for e in at.error)
 
 
-def test_out_of_period_time_is_rejected():
-    fc = ui._load_forecaster()
+def test_service_modes_and_validation():
+    svc = ui._load_service()
+    r = svc.zone_hour(102, "2023-02-14 18:00")
+    assert r["mode"] == "dataset" and "actual_kwh" in r and set(r["badges"]) == set(r["models"])
+    f = svc.zone_hour(102, "2025-08-15 18:00")
+    assert f["mode"] == "future" and "actual_kwh" not in f and f["predicted_kwh"] >= 0
+    for bad in ("2022-09-15 10:00", "2099-01-01 10:00"):
+        with pytest.raises(ValueError):
+            svc.zone_hour(102, bad)
     with pytest.raises(ValueError):
-        fc.zone_hour(102, "2022-10-01 10:00")
-    with pytest.raises(ValueError):
-        fc.zone_day(999999, "2023-02-10")
+        svc.compare_range("2023-02-20", "2023-03-05")
+
+
+def test_walk_forward_never_trains_on_predicted_month():
+    import pandas as pd
+    from src import config
+    monthly = pd.read_csv(config.ARTIFACTS_DIR / "walk_forward" / "monthly_metrics.csv")
+    per_month = monthly[monthly.month != "Oct-Feb (all)"].drop_duplicates("month")
+    from src.feature_engineering import load_features
+    feats = load_features()
+    for _, row in per_month.iterrows():
+        start = pd.Timestamp(row.month + "-01")
+        assert int(row.train_rows) == int((feats.time < start).sum())

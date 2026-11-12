@@ -12,6 +12,7 @@ pages = {
     "Forecasts": [
         st.Page("app_pages/home.py", title="Home", icon="🏠", default=True),
         st.Page("app_pages/demand_forecast.py", title="Demand Forecast", icon="🔮"),
+        st.Page("app_pages/prediction_vs_actual.py", title="Prediction vs Actual", icon="🎯"),
         st.Page("app_pages/demand_map.py", title="Demand Map", icon="🗺️"),
         st.Page("app_pages/zone_insights.py", title="Zone Insights", icon="📈"),
         st.Page("app_pages/compare_zones.py", title="Compare Zones", icon="⚖️"),
