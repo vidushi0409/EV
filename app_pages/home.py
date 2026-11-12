@@ -40,7 +40,7 @@ c1, c2 = st.columns(2)
 c1.markdown(f'<div class="card"><h4>📊 {DATASET_START:%d %b %Y} – {DATASET_END:%d %b %Y}</h4>'
             '<p>Prediction compared with actual demand.</p></div>', unsafe_allow_html=True)
 c2.markdown(f'<div class="card"><h4>🔭 {DATASET_END + pd.Timedelta(hours=1):%d %b %Y} – today</h4>'
-            '<p>Estimates from learnt demand patterns.</p></div>', unsafe_allow_html=True)
+            '<p>Typical-pattern estimates (same in every year).</p></div>', unsafe_allow_html=True)
 st.write("")
 
 st.subheader("Explore")

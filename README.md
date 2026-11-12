@@ -10,7 +10,7 @@ In the local **Streamlit** web application users pick **any date from 1 Oct 2022
 | Dates | What the app shows |
 |---|---|
 | 1 Oct 2022 – 28 Feb 2023 (dataset period) | Next-hour predictions of all three models **next to the actual demand**, with error and an accuracy label. Each month was predicted by models trained only on earlier months (walk-forward). |
-| 1 Mar 2023 – today | **Estimates** from future-date (profile) models trained on all six months, with a typical error range. No actual data exists for these dates. |
+| 1 Mar 2023 – today | **Typical-pattern estimates** from profile models trained on all six months, with a typical error range. They depend on zone, weekday, hour, holiday and typical price, **not on the year**: six months of data contain no information about growth after Feb 2023. No actual data exists for these dates. |
 
 September 2022 is training-only data (no earlier month to learn from).
 

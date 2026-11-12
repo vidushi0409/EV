@@ -106,13 +106,15 @@ def hour_label(h):
 MODE_TIPS = {
     "dataset": "Predicted by models that never saw this month, and compared with the actual demand "
                "recorded in the dataset.",
-    "future": "Estimate from demand patterns of Sep 2022 – Feb 2023. No actual data exists for this "
-              "date; EV growth after Feb 2023 is not included.",
+    "future": "Typical demand for this zone, weekday and hour, learnt from Sep 2022 – Feb 2023. "
+              "It is the same in every year: the data contains no information on growth after "
+              "Feb 2023. No actual data exists for this date.",
 }
 
 
 def mode_banner(mode):
-    text = "📊 Dataset period · compared with actual" if mode == "dataset" else "🔭 Future date · estimate"
+    text = ("📊 Dataset period · compared with actual" if mode == "dataset"
+            else "🔭 Typical-pattern estimate · not year-specific")
     st.markdown(f'<span class="pill pill-{mode}" title="{html.escape(MODE_TIPS[mode])}">{text} ⓘ</span>',
                 unsafe_allow_html=True)
 

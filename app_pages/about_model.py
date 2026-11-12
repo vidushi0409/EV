@@ -41,9 +41,9 @@ c1, c2 = st.columns(2)
 c1.markdown(f'<div class="card"><h4>📊 Dataset period · {svc.dataset_best}</h4>'
             '<p>Next-hour models using recent demand. Walk-forward: each month predicted by models '
             'trained on earlier months only.</p></div>', unsafe_allow_html=True)
-c2.markdown(f'<div class="card"><h4>🔭 Future dates · {svc.future_best}</h4>'
-            '<p>Pattern models using calendar, prices and each zone\'s typical demand, trained on all '
-            'six months.</p></div>', unsafe_allow_html=True)
+c2.markdown(f'<div class="card"><h4>🔭 Typical-pattern estimates · {svc.future_best}</h4>'
+            '<p>Calendar, prices and each zone\'s typical demand, trained on all six months. '
+            'Not year-specific: no growth after Feb 2023 is known.</p></div>', unsafe_allow_html=True)
 st.write("")
 
 tab1, tab2, tab3, tab4 = st.tabs(["Model comparison", "Month by month", "Future-date models", "Demand drivers"])

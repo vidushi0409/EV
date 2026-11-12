@@ -38,7 +38,7 @@ def test_page_runs_without_errors(page):
 def test_page_runs_for_future_date(page):
     at = run_page(page, dt.date(2025, 8, 15))
     no_problems(at)
-    assert any("Future date" in m.value for m in at.markdown)
+    assert any("Typical-pattern estimate" in m.value for m in at.markdown)
 
 
 def test_app_entry_point_runs():

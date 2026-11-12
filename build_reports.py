@@ -641,7 +641,11 @@ def build_report(R):
           f"than next-hour forecasting ({wf[(wf.month == '2023-02') & (wf.model == b)].RMSE.iloc[0]:.1f} kWh on "
           "the same month). Without recent real demand, the best available estimate is close to the zone's "
           "usual pattern; the tree models fitted Sep-Jan specifics that did not carry over to February. "
-          "Future estimates are therefore labelled as estimates in the application.")
+          "Because six months of data contain no information about year-to-year change, the estimates do "
+          "not depend on the year: the same zone, weekday and hour give nearly the same value in 2024 or "
+          "2025. The application therefore labels them 'typical-pattern estimates', not year-specific "
+          "forecasts. Extending the data artificially (copying or synthesising extra years) was rejected, "
+          "because the model would only learn the assumptions used to create the data.")
 
     # 12
     doc.h1("12. Conclusion")
@@ -799,6 +803,8 @@ def build_viva(R):
     doc.qa("How can you predict dates after February 2023?", "Next-hour models need the last hours' real demand, which does not exist after the dataset. For later dates we use profile models: inputs known for any date (hour, weekday, holiday, typical prices, zone attributes and the zone's typical demand), trained on all six months.")
     doc.qa("How accurate are the future-date estimates?", f"Tested on February: best model {fb}, RMSE {pe.at[fb, 'RMSE']:.1f} kWh, only {100 * (1 - pe.at[fb, 'RMSE'] / pe.at[ref, 'RMSE']):.1f}% better than just using the zone's typical demand ({pe.at[ref, 'RMSE']:.1f}). Next-hour forecasts on the same month are far better ({wf[(wf.month == '2023-02') & (wf.model == b)].RMSE.iloc[0]:.1f}). Recent demand is the key information.")
     doc.qa("Why is Linear Regression best for future dates when LightGBM is best overall?", "Without recent demand the task becomes 'scale the zone's usual pattern'. The tree models learnt Sep-Jan specifics that did not carry over to February, while the simpler linear model generalised better. The best model depends on the task and the inputs.")
+    doc.qa("Why do two different years give almost the same estimate?", "The year is not an input: six months of data contain no information about how demand changes from year to year, so any trend would be invented. The estimate depends on the zone, weekday, hour, holiday and typical price; that is why the app calls it a typical-pattern estimate.")
+    doc.qa("Why not extend the dataset to two years with synthetic data?", "Copied or generated data only contains the assumptions used to create it, so the model would 'learn' our own guesses and the results could not be validated. That would be fabricated data. The correct fix is a real multi-year dataset (future scope).")
     doc.qa("What are the limits of future estimates?", "They reflect Sep 2022 - Feb 2023 patterns only: no summer months, no growth in EV numbers or new stations after February 2023, and they cannot be checked against actual data. The app labels them as estimates.")
 
     doc.h1("14. Application and practical use")
