@@ -70,8 +70,9 @@ st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True,
              column_config={c: st.column_config.NumberColumn(format="%.1f")
                             for c in ("Prediction (kWh)", "Error (kWh)", "Typical error (± kWh)")})
 legend = "⭐ best on average" + (" · 🎯 closest this hour" if closest else "")
-st.markdown(f'<span class="subtle" title="The ⭐ model has the smallest error over all forecast hours; '
-            f'for a single hour another model can be closer.">{legend} ⓘ</span>', unsafe_allow_html=True)
+st.markdown(f'<span class="subtle">{legend}</span>', unsafe_allow_html=True,
+            help="The ⭐ model has the smallest error over all forecast hours. For a single hour "
+                 "another model can be closer (🎯).")
 
 # ---------------------------------------------------------------- whole day chart
 fig = go.Figure()

@@ -53,11 +53,9 @@ def setup_page(title):
 
 def kpi(col, label, value, sub="", tooltip=""):
     """Compact metric card. `value` may contain HTML (e.g. a badge)."""
-    tip = f' title="{html.escape(tooltip)}"' if tooltip else ""
-    icon = " ⓘ" if tooltip else ""
-    col.markdown(f'<div class="kpi"{tip}><div class="l">{html.escape(label)}{icon}</div>'
+    col.markdown(f'<div class="kpi"><div class="l">{html.escape(label)}</div>'
                  f'<div class="v">{value}</div><div class="s">{sub or "&nbsp;"}</div></div>',
-                 unsafe_allow_html=True)
+                 unsafe_allow_html=True, help=tooltip or None)
 
 
 def kpi_row(items):
@@ -115,8 +113,8 @@ MODE_TIPS = {
 def mode_banner(mode):
     text = ("📊 Dataset period · compared with actual" if mode == "dataset"
             else "🔭 Typical-pattern estimate · not year-specific")
-    st.markdown(f'<span class="pill pill-{mode}" title="{html.escape(MODE_TIPS[mode])}">{text} ⓘ</span>',
-                unsafe_allow_html=True)
+    st.markdown(f'<span class="pill pill-{mode}">{text}</span>', unsafe_allow_html=True,
+                help=MODE_TIPS[mode])
 
 
 def date_inputs(svc, key, default_day="2023-02-14", default_hour=18, with_hour=True, cols=None):
