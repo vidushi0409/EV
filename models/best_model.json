@@ -1,0 +1,44 @@
+{
+  "best_model": "LightGBM",
+  "selection_rule": "lowest validation RMSE (January 2023)",
+  "lowest_test_rmse_model": "LightGBM",
+  "selection_confirmed_on_test": true,
+  "validation_rmse": {
+    "Linear Regression": 176.151,
+    "Random Forest": 152.185,
+    "LightGBM": 141.371
+  },
+  "test_metrics": {
+    "MAE": 34.2849,
+    "MSE": 20355.5535,
+    "RMSE": 142.6729,
+    "R2": 0.972
+  },
+  "features": [
+    "volume_lag1",
+    "volume_lag24",
+    "volume_lag168",
+    "volume_roll24_mean",
+    "occupancy_lag1",
+    "duration_lag1",
+    "neighbor_volume_lag1",
+    "e_price",
+    "s_price",
+    "hour",
+    "day",
+    "dayofweek",
+    "is_weekend",
+    "is_holiday",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "num_piles",
+    "fast_share",
+    "avg_pile_kw",
+    "capacity_kw",
+    "area",
+    "longitude",
+    "latitude"
+  ]
+}

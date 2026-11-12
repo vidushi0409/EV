@@ -1,0 +1,17 @@
+{
+  "rows_used": 759000,
+  "period": "train (2022-09-08 to 2022-12-31)",
+  "notes": [
+    "Strongest predictors among model inputs: volume_lag24 (r = 0.96), volume_lag168 (r = 0.95), volume_lag1 (r = 0.94). Recent demand in the same zone is the best single indicator of next-hour demand.",
+    "Same-hour occupancy (r = 0.40) and duration (r = 0.44) move with demand but are only known after the hour ends, so the models use their 1-hour lags instead (r = 0.38 and 0.42).",
+    "volume_11kw has r = 0.50 with the target because it is a component of it (energy from <=11 kW chargers); using it would leak the answer.",
+    "Electricity price r = -0.23 and service price r = -0.12: prices follow a daily time-of-use tariff, so part of their correlation reflects the time of day rather than a direct price effect.",
+    "Zone size/capacity: num_piles r = 0.30, capacity_kw r = 0.66 - larger zones deliver more energy on average.",
+    "hour has r = -0.07: Pearson only measures LINEAR association, and the daily cycle is not linear in the hour number, which is why sine/cosine hour features are used.",
+    "neighbor_volume_lag1 has pooled r = -0.03, but inside each zone over time the median r is 0.30. Pooled correlation is dominated by size differences between zones (a large zone can border small ones); within a zone, busier neighbours do go with busier hours.",
+    "hour_cos has median within-zone r = 0.28, confirming a clear daily cycle that the raw hour number hides.",
+    "Negative correlations: e_price (r = -0.23)",
+    "Multicollinearity (|r| >= 0.8) among inputs: volume_lag24 ~ volume_lag168 (r = 0.95); occupancy_lag1 ~ duration_lag1 (r = 0.92); fast_share ~ avg_pile_kw (r = 0.92); volume_lag1 ~ volume_lag24 (r = 0.91); volume_lag1 ~ volume_lag168 (r = 0.90); volume_lag1 ~ volume_roll24_mean (r = 0.87); volume_lag24 ~ volume_roll24_mean (r = 0.87); volume_lag168 ~ volume_roll24_mean (r = 0.85). This makes Linear Regression coefficients unstable to interpret, but does not harm tree-based models' predictions.",
+    "Correlation does not imply causation; it only measures linear co-movement."
+  ]
+}

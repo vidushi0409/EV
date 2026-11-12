@@ -1,0 +1,21 @@
+feature,pearson_r,strength,role
+volume_lag24,0.9640955649737734,strong positive,model input
+volume_lag168,0.9478326393030425,strong positive,model input
+volume_lag1,0.9368942197718277,strong positive,model input
+volume_roll24_mean,0.8705355774514981,strong positive,model input
+capacity_kw,0.6567919807684844,moderate positive,model input
+fast_share,0.5069215236249254,moderate positive,model input
+volume_11kw,0.4992757295575053,moderate positive,excluded - part of the target (leakage)
+avg_pile_kw,0.4636937027790977,moderate positive,model input
+duration,0.4398599957855104,moderate positive,excluded - same-hour value unknown at forecast time
+duration_lag1,0.4193544178048418,moderate positive,model input
+occupancy,0.4008625965966194,moderate positive,excluded - same-hour value unknown at forecast time
+occupancy_lag1,0.380541801585896,weak positive,model input
+num_piles,0.2974928967423261,weak positive,model input
+e_price,-0.23047710413518108,weak negative,model input
+s_price,-0.11858459971653566,negligible,model input
+area,0.0862049353260029,negligible,model input
+hour,-0.06782525055606345,negligible,model input
+neighbor_volume_lag1,-0.030632240953307875,negligible,model input
+is_weekend,0.00421850849854085,negligible,model input
+is_holiday,-0.001557898465512983,negligible,model input

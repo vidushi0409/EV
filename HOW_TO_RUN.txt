@@ -1,0 +1,168 @@
+=====================================================================
+  EV CHARGING DEMAND PREDICTION SYSTEM - HOW TO RUN THE PROJECT
+=====================================================================
+
+All commands are typed in a terminal (Command Prompt, PowerShell or the
+VS Code terminal) opened INSIDE the project folder (the "EV" folder).
+
+
+---------------------------------------------------------------------
+QUICK START (laptop where the project is already set up and trained)
+---------------------------------------------------------------------
+
+  1. cd C:\Users\HP\OneDrive\Desktop\EV
+  2. venv\Scripts\activate
+  3. streamlit run app.py
+
+  The app opens at  http://localhost:8501
+  Press Ctrl + C in the terminal to stop it.
+
+  If you already have the app open in another terminal, close it first.
+  If port 8501 is still busy, run:  taskkill /IM streamlit.exe /F
+
+
+---------------------------------------------------------------------
+FULL SETUP (new computer, or a fresh copy of the project)
+---------------------------------------------------------------------
+
+STEP 0 - Requirements
+  - Windows laptop with Python 3.9, 3.10 or 3.11
+    (check with:  python --version)
+  - At least 8 GB RAM and about 3 GB free disk space
+    (plus space for the dataset)
+  - Internet connection for installing packages. After that everything
+    works offline, except the satellite background of the Demand Map.
+
+STEP 1 - Open a terminal in the project folder
+  cd C:\Users\HP\OneDrive\Desktop\EV
+
+STEP 2 - Create the virtual environment (only once)
+  python -m venv venv
+
+STEP 3 - Activate the virtual environment (every new terminal)
+  venv\Scripts\activate
+
+  "(venv)" now appears at the start of the line.
+  If PowerShell says "running scripts is disabled", run this once and
+  then activate again:
+    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+STEP 4 - Install the libraries (only once, a few minutes)
+  pip install -r requirements.txt
+
+STEP 5 - Place the dataset (only once)
+  The UrbanEV dataset is not stored in Git (it is about 6 GB).
+  Copy it so that this folder structure exists:
+
+  EV\data\Dataset\UrbanEVDataset\UrbanEVDataset\
+      20220901-20230228_zone-cleaned-aggregated\
+          charge_1hour\   volume.csv, volume-11kw.csv, occupancy.csv,
+                          duration.csv, e_price.csv, s_price.csv
+          charge_5min\    (only volume.csv is used, for a data check)
+          adj.csv, distance.csv, zone-information.csv,
+          station_information.csv
+      20220901-20230228_station-raw\
+          station_information.csv
+          pile_rated_power.csv
+
+  The folder station-raw\charge_5min\ (5 GB) is NOT used and may be
+  deleted to save space.
+  (Optional) To keep the dataset somewhere else, set this before
+  training:   set EV_DATA_DIR=D:\path\to\UrbanEVDataset\UrbanEVDataset
+
+STEP 6 - Train the models (only once)
+  python train.py
+
+  First run: about 20 minutes. It
+    1. loads and checks the data
+    2. builds the features
+    3. runs the correlation analysis
+    4. trains and compares Linear Regression, Random Forest, LightGBM
+    5. computes walk-forward forecasts for Oct 2022 - Feb 2023
+    6. trains the future-date models
+  Results are saved, so later runs take about 20 seconds.
+  To retrain everything from scratch:  python train.py --force
+
+STEP 7 - Start the web application
+  streamlit run app.py
+
+  Open  http://localhost:8501  in the browser (it usually opens itself).
+  Stop the app with Ctrl + C in the terminal.
+
+
+---------------------------------------------------------------------
+USING THE APP (suggested demo order)
+---------------------------------------------------------------------
+  Home                 - overview, daily predicted vs actual demand
+  Demand Forecast      - choose zone, date, hour -> press Predict
+                           * 1 Oct 2022 - 28 Feb 2023: prediction of all
+                             three models next to the ACTUAL demand
+                           * after 28 Feb 2023: estimate with a typical
+                             error range (no actual data exists)
+  Prediction vs Actual - choose an area and a date range, compare
+  Demand Map           - demand of every zone at one hour
+  Zone Insights        - 24-hour forecast, peak hours, best time to charge
+  Compare Zones        - two or three zones side by side
+  About the Model      - model comparison, monthly accuracy, downloads
+
+  Note: September 2022 cannot be selected - it is the first month of
+  the data and is used only for training.
+
+
+---------------------------------------------------------------------
+OPTIONAL TASKS
+---------------------------------------------------------------------
+Jupyter notebook (full analysis)
+  1. Open  notebooks\UrbanEV_Analysis.ipynb  in VS Code
+  2. Click "Select Kernel" (top right) -> choose "Python (EV venv)"
+     or the venv interpreter
+  3. Click "Run All" (about 2-3 minutes)
+  On a new computer, register the kernel once (venv activated):
+    python -m ipykernel install --sys-prefix --name ev-venv --display-name "Python (EV venv)"
+
+Regenerate the report and viva documents (after retraining)
+  python build_reports.py
+  -> reports\Project_Report.pdf / .docx
+  -> reports\Viva_Preparation.pdf / .docx
+
+Run the automated tests (30 tests)
+  python -m pytest -q
+
+
+---------------------------------------------------------------------
+TROUBLESHOOTING
+---------------------------------------------------------------------
+  "Dataset files not found"
+      -> check the folder structure in STEP 5 (or set EV_DATA_DIR)
+
+  "The forecasting model is not ready"
+      -> run  python train.py  and refresh the browser
+
+  "No module named ..."
+      -> the venv is not active: run  venv\Scripts\activate
+         then  pip install -r requirements.txt
+
+  Port 8501 already in use
+      -> taskkill /IM streamlit.exe /F
+         or  streamlit run app.py --server.port 8502
+
+  Notebook says "pyarrow is missing"
+      -> select the "Python (EV venv)" kernel, not the system Python
+
+  Map shows bubbles but no satellite background
+      -> no internet connection; everything else still works
+
+
+---------------------------------------------------------------------
+PROJECT FILES (where things are)
+---------------------------------------------------------------------
+  app.py, app_pages\      web application
+  src\                    data processing, models, prediction service
+  train.py                runs the whole ML pipeline
+  build_reports.py        builds the report and viva documents
+  notebooks\              Jupyter analysis notebook
+  reports\                Project_Report and Viva_Preparation (PDF + Word)
+  models\, artifacts\     saved models, results, charts (created by train.py)
+  tests\                  automated tests
+  README.md               project overview
+=====================================================================

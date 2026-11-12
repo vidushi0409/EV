@@ -1,9 +1,23 @@
+# Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
 .venv/
 venv/
 .env
-.ipynb_checkpoints/
-.pytest_cache/
+
+# Dataset (large, kept locally - see README for placement)
+data/Dataset/
+data/processed/
+
+# Large trained model files (regenerate with: python train.py)
+models/**/*.joblib
+models/*.txt
+artifacts/walk_forward/predictions.parquet
+
+# Editor / logs
 .vscode/
 *.log
