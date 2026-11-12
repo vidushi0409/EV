@@ -44,7 +44,11 @@ def test_page_runs_for_future_date(page):
 def test_app_entry_point_runs():
     at = AppTest.from_file("app.py", default_timeout=180)
     at.run()
-    assert not at.exception
+    no_problems(at)
+
+
+def test_home_shows_summary():
+    assert any("Energy delivered" in m.value for m in run_page("home").markdown)
 
 
 @pytest.mark.parametrize("day,expect_actual", [(dt.date(2023, 2, 14), True), (dt.date(2025, 8, 15), False)])
@@ -53,9 +57,9 @@ def test_forecast_button(day, expect_actual):
     at.date_input[0].set_value(day).run()
     at.button[0].click().run()
     no_problems(at)
-    labels = [m.label for m in at.metric]
-    assert any(l.startswith(("Predicted demand", "Estimated demand")) for l in labels)
-    assert ("Actual demand" in labels) == expect_actual
+    cards = " ".join(m.value for m in at.markdown if 'class="kpi"' in m.value)
+    assert "Predicted · " in cards or "Estimate · " in cards
+    assert ('<div class="l">Actual</div>' in cards) == expect_actual
 
 
 @pytest.mark.parametrize("page", ["prediction_vs_actual", "demand_map", "zone_insights",

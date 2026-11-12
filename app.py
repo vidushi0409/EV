@@ -23,7 +23,6 @@ pages = {
 }
 
 with st.sidebar:
-    st.markdown(f"### ⚡ {APP_NAME}")
-    st.caption("Hourly EV charging-demand forecasts for 275 zones in Shenzhen.")
+    st.caption(f"⚡ {APP_NAME}")
 
 st.navigation(pages).run()
