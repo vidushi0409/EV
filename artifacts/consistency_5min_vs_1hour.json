@@ -1,0 +1,8 @@
+{
+  "five_min_rows": 52128,
+  "five_min_zones": 275,
+  "same zone columns": true,
+  "max_abs_difference_kwh": 0.000434,
+  "mean_abs_difference_kwh": 3e-06,
+  "hourly_equals_sum_of_5min": true
+}

@@ -1,0 +1,9 @@
+feature_1,feature_2,pearson_r
+volume_lag24,volume_lag168,0.9458697819171171
+occupancy_lag1,duration_lag1,0.9193990049518469
+fast_share,avg_pile_kw,0.919341394886787
+volume_lag1,volume_lag24,0.913756330249103
+volume_lag1,volume_lag168,0.899722029896025
+volume_lag1,volume_roll24_mean,0.8722506362455871
+volume_lag24,volume_roll24_mean,0.8720961038330246
+volume_lag168,volume_roll24_mean,0.8548792503531383

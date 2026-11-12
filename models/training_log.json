@@ -1,0 +1,27 @@
+{
+  "Linear Regression": {
+    "model": "Linear Regression",
+    "train_rows": 759000,
+    "n_features": 25,
+    "training_seconds": 0.9,
+    "trained_at": "2026-11-12T00:43:58",
+    "file_size_mb": 0.0
+  },
+  "LightGBM": {
+    "model": "LightGBM",
+    "train_rows": 759000,
+    "n_features": 25,
+    "training_seconds": 14.9,
+    "trained_at": "2026-11-12T00:45:07",
+    "best_iteration": 369,
+    "file_size_mb": 0.8
+  },
+  "Random Forest": {
+    "model": "Random Forest",
+    "train_rows": 759000,
+    "n_features": 25,
+    "training_seconds": 52.3,
+    "trained_at": "2026-11-12T00:44:51",
+    "file_size_mb": 23.6
+  }
+}
